@@ -11,8 +11,9 @@
 # include <stdlib.h>
 # include <errno.h>
 # include <string.h>
+# include <pthread.h>
 
-# define BUFFER_SIZE 131072
+# define BUFFER_SIZE 1024
 
 void	print_connection(struct sockaddr_in info);
 void	error_handling(char *type, char *errmsg);
