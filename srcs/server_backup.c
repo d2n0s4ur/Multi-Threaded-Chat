@@ -57,7 +57,6 @@ int	main(int argc, char *argv[])
 		}
 
 		// print recved data
-		putstr("Client : ");
 		putstr(buffer);
 
 		// recv "QUIT" msg
@@ -74,7 +73,6 @@ int	main(int argc, char *argv[])
 		memset(buffer, 0, BUFFER_SIZE);
 		
 		// get data from std input
-		putstr("Server : ");
 		read_size = read(0, buffer, BUFFER_SIZE);
 		if (read_size <= 0) // error occurs at std input
 		{

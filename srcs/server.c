@@ -14,30 +14,21 @@ void	*app_socket()
 	set_sock(&server_addr, htonl(INADDR_ANY), (u_short)atoi(argv[1]));
 
 	if (bind(server_fd, (const struct sockaddr*)&server_addr, sizeof(server_addr)) == -1)
-	{
 		error_handling("binding socket", strerror(errno));
-		pthread_exit(FAIL);
-	}
 
 	if (listen(server_fd, 5) == -1)
-	{
 		error_handling("listen socket", strerror(errno));
-		pthread_exit(FAIL);
-	}
 
 	client_len = 0;
 	client_fd = accept(server_fd, (struct sockaddr*)&client_addr, (socklen_t *)&client_len);
 	if (client_fd == -1)	// error when accept client's connect request
-	{
 		error_handling("client's requst", strerror(errno));
-		pthread_exit(FAIL);
-	}
 	
 	print_connection(client_addr);
 
 	buffer = malloc_buffer();
 	read_size = recv_from_fd(buffer, client_fd, server_fd);
-	print_user(buffer);
+	print_connect(buffer);
 
 	while (1)
 	{
@@ -89,5 +80,4 @@ int main(int argc, char *argv[])
 		set_sock(&(server_addr[i]), htonl(INADDR_ANY), (u_short)atoi(argv[1]));
 		i++;
 	}
-
 }

@@ -110,7 +110,10 @@ char	*malloc_buffer(void)
 
 	ret = malloc((BUFFER_SIZE + 1) * sizeof(char));
 	if (!ret)
+	{
 		error_handling("malloc buffer", strerror(errno));
+		exit(FAIL);
+	}
 	return (ret);
 }
 
@@ -131,13 +134,18 @@ int	recv_from_fd(char *buffer, int client_fd, int server_fd)
 		close(client_fd);
 		free(buffer);
 		error_handling("recv data", strerror(errno));
-		pthread_exit(FAIL);
 	}
 	return (ret);
 }
 
-void	print_user(char *username)
+void	print_connect(char *username)
 {
 	putstr(username);
 	putstr(" is connected\n");
+}
+
+void	print_disconnect(char *username)
+{
+	putstr(username);
+	putstr(" is disconnected\n");
 }
