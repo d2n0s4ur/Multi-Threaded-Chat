@@ -20,7 +20,7 @@ int	create_socket(void)
 * FUNCTION : 	void	error_handling(char *type, char *errmsg)
 * PARAMETERS:	type(char *), errmsg(char *)
 * RETURN :		None(void)
-* DESCRIPTION :	write error msg & EXIT process
+* DESCRIPTION :	write error msg
 ********************************************************************/
 void	error_handling(char *type, char *errmsg)
 {
@@ -29,7 +29,6 @@ void	error_handling(char *type, char *errmsg)
 	putstr(" : ");
 	putstr(errmsg);
 	putstr("\n");
-	exit(EXIT_FAILURE);
 }
 
 /*******************************************************************
@@ -113,4 +112,32 @@ char	*malloc_buffer(void)
 	if (!ret)
 		error_handling("malloc buffer", strerror(errno));
 	return (ret);
+}
+
+int	recv_from_fd(char *buffer, int client_fd, int server_fd)
+{
+	int ret;
+
+	// Initialize buffer as 0(NULL) for read from client
+	memset(buffer, 0, BUFFER_SIZE);
+
+	// recv data from client
+	ret = read(client_fd, buffer, BUFFER_SIZE);
+
+	// detect error when recv data from client
+	if (ret <= 0) // error occurs at recv data
+	{
+		close(server_fd);
+		close(client_fd);
+		free(buffer);
+		error_handling("recv data", strerror(errno));
+		pthread_exit(FAIL);
+	}
+	return (ret);
+}
+
+void	print_user(char *username)
+{
+	putstr(username);
+	putstr(" is connected\n");
 }
