@@ -1,9 +1,10 @@
 #include "chat.h"
+#include<stdio.h>
 
-pthread_mutex_t	mutex;
-int				read_size, read_size;
+int				recv_size, send_size;
 t_socket		client;
-char			*buffer;
+char			*send_buffer, *recv_buffer;
+pthread_t		send_threadID, recv_threadID;
 
 void	socket_connction(char *argv[])
 {
@@ -33,41 +34,38 @@ void	socket_connction(char *argv[])
 
 void	*sendRoutine(void *arg)
 {
-	(void)arg;
-	pthread_mutex_lock(&mutex);
-
 	// loop while recv QUIT msg or send QUIT msg
 	while (1)
 	{
 		// initailize buffer as 0(NULL)
-		memset(buffer, 0, BUFFER_SIZE);
+		memset(send_buffer, 0, BUFFER_SIZE);
 
 		// get data from std input
-		read_size = read(0, buffer, BUFFER_SIZE);
+		send_size = read(0, send_buffer, BUFFER_SIZE);
 
-		if (read_size <= 0) // error occurs at std input
+		if (send_size <= 0) // error occurs at std input
 		{
+			pthread_cancel(recv_threadID);
 			close(client.socket_fd);
-			free(buffer);
+			free(send_buffer);
 			error_handling("std input", strerror(errno));
-			pthread_mutex_unlock(&mutex);
 			exit(FAIL);
 		}
-		if (write(client.socket_fd, buffer, read_size + 1) <= 0) // error occurs when sending data
+		if (strncmp(send_buffer, "QUIT\n", 5) == 0 && send_size == 5) // when send "QUIT" -> disconnect
 		{
+			print_disconnect(arg);
+			pthread_cancel(recv_threadID);
 			close(client.socket_fd);
-			free(buffer);
-			error_handling("sending data", strerror(errno));
-			pthread_mutex_unlock(&mutex);
-			exit(FAIL);
-		}
-		if (strncmp(buffer, "QUIT\n", 5) == 0 && read_size == 5) // when send "QUIT" -> disconnect
-		{
-			close(client.socket_fd);
-			free(buffer);
-			putstr("Disconnected\n");
-			pthread_mutex_unlock(&mutex);
+			free(send_buffer);
 			exit(PASS);
+		}
+		if (write(client.socket_fd, send_buffer, send_size + 1) <= 0) // error occurs when sending data
+		{
+			pthread_cancel(recv_threadID);
+			close(client.socket_fd);
+			free(send_buffer);
+			error_handling("sending data", strerror(errno));
+			exit(FAIL);
 		}
 	}
 }
@@ -75,64 +73,50 @@ void	*sendRoutine(void *arg)
 void	*recvRoutine(void *arg)
 {
 	(void)arg;
-	pthread_mutex_lock(&mutex);
+
 	while (1)
 	{
 		// initialize buffer as 0(NULL)
-		memset(buffer, 0, BUFFER_SIZE);
+		memset(recv_buffer, 0, BUFFER_SIZE);
 
 		// recv data from server
-		read_size = read(client.socket_fd, buffer, BUFFER_SIZE);
+		recv_size = read(client.socket_fd, recv_buffer, BUFFER_SIZE);
 
 		// detect error when recv data from client
-		if (read_size <= 0) // error occurs at recv data
+		if (recv_size <= 0) // error occurs at recv data
 		{
+			pthread_cancel(send_threadID);
 			close(client.socket_fd);
-			free(buffer);
+			free(recv_buffer);
 			error_handling("recv data", strerror(errno));
-			pthread_mutex_unlock(&mutex);
 			exit(FAIL);
 		}
 
 		// print recved data
-		putstr(buffer);
-
-		if (strncmp(buffer, "QUIT\n", 5) == 0 && read_size == 6) // when recv "QUIT" msg
-		{
-			//close connection & print "Disconnected"
-			close(client.socket_fd);
-			free(buffer);
-			putstr("Disconnected\n");
-			pthread_mutex_unlock(&mutex);
-			exit(PASS);
-		}
+		putstr(recv_buffer);		
 	}
 }
 
 int	main(int argc, char *argv[])
 {
-	pthread_t send_threadID, recv_threadID;
-	buffer = malloc_buffer();
+	send_buffer = malloc_buffer();
+	recv_buffer = malloc_buffer();
 
 	// Check parameter's count. If parameter's num is not 2, exit program.
 	if (argc != 4)
 	{
 		putstr("usage : ./client <ip> <port> <username>\n");
-		pthread_exit(FAIL);
+		exit(FAIL);
 	}
 	
 	// before recv & send data
 	socket_connction(argv);
 
-	pthread_mutex_init(&mutex,NULL);
-
-	pthread_create(&send_threadID, NULL, recvRoutine, NULL);
-	pthread_create(&recv_threadID, NULL, sendRoutine, NULL);
+	pthread_create(&send_threadID, NULL, sendRoutine, argv[3]);
+	pthread_create(&recv_threadID, NULL, recvRoutine, NULL);
 
 	pthread_join(send_threadID, NULL);
 	pthread_join(recv_threadID, NULL);
-
-	pthread_mutex_destroy(&mutex);
 
 	return (0);
 }

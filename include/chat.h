@@ -14,8 +14,8 @@
 # include <pthread.h>
 
 # define BUFFER_SIZE 1024
-# define FAIL 0
-# define PASS 1
+# define FAIL -1
+# define PASS 0
 
 typedef struct	s_socket {
 	int					socket_fd;
