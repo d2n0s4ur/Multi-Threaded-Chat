@@ -32,10 +32,10 @@ void	error_handling(char *type, char *errmsg)
 }
 
 /*******************************************************************
-* FUNCTION : 	void	putstr(char *s)
-* PARAMETERS:	s(char *)
+* FUNCTION : 	void	putstr(char *s, int fd)
+* PARAMETERS:	s(char *), fd(int)
 * RETURN :		None(void)
-* DESCRIPTION :	write string at stdin buffer
+* DESCRIPTION :	write string at fd buffer (file descriptor)
 ********************************************************************/
 void	putstr(char *s, int fd)
 {
@@ -75,7 +75,7 @@ void	set_sock(struct sockaddr_in *socket, in_addr_t addr, u_short port)
 * FUNCTION : 	void	putport(u_short port)
 * PARAMETERS:	port(unsigned short)
 * RETURN :		None(void)
-* DESCRIPTION :	write port number on std output
+* DESCRIPTION :	write port number on std output (fd 1)
 ********************************************************************/
 void	putport(u_short port)
 {
@@ -115,37 +115,4 @@ char	*malloc_buffer(void)
 		exit(FAIL);
 	}
 	return (ret);
-}
-
-int	recv_from_fd(char *buffer, int client_fd, int server_fd)
-{
-	int ret;
-
-	// Initialize buffer as 0(NULL) for read from client
-	memset(buffer, 0, BUFFER_SIZE);
-
-	// recv data from client
-	ret = read(client_fd, buffer, BUFFER_SIZE);
-
-	// detect error when recv data from client
-	if (ret <= 0) // error occurs at recv data
-	{
-		close(server_fd);
-		close(client_fd);
-		free(buffer);
-		error_handling("recv data", strerror(errno));
-	}
-	return (ret);
-}
-
-void	print_connect(char *username, int fd)
-{
-	putstr(username, fd);
-	putstr(" is connected\n", fd);
-}
-
-void	print_disconnect(char *username, int fd)
-{
-	putstr(username, fd);
-	putstr(" is disconnected\n", fd);
 }

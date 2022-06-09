@@ -23,15 +23,12 @@ typedef struct	s_socket {
 	struct sockaddr_in	socket_addr;
 }	t_socket;
 
-void	print_connection(struct sockaddr_in info);
-void	error_handling(char *type, char *errmsg);
 int		create_socket(void);
+void	error_handling(char *type, char *errmsg);
 void	putstr(char *s, int fd);
+void	print_connection(struct sockaddr_in info);
 void	set_sock(struct sockaddr_in *socket, in_addr_t addr, u_short port);
 void	putport(u_short port);
 char	*malloc_buffer(void);
-int		recv_from_fd(char *buffer, int client_fd, int server_fd);
-void	print_connect(char *username, int fd);
-void	print_disconnect(char *username, int fd);
 
 #endif
