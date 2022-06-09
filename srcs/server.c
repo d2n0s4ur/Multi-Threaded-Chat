@@ -1,83 +1,102 @@
 #include "chat.h"
 
-// int                 server_fd[5];
-// struct sockaddr_in  server_addr[5];
+t_socket 			server;
+int					client_cnt = 0;
+int					client[MAX_CLIENT];
+char				*username[MAX_CLIENT];
+struct sockaddr_in	client_addr;
+int					client_len;
+pthread_mutex_t		 mutex;
 
-void	*app_socket()
+void	send_msg(char *str, int except)
 {
-	int					server_fd, client_fd, client_len, read_size;
-	char				*buffer;
-	struct sockaddr_in	server_addr, client_addr;
+	int i;
 
-	server_fd = create_socket();
-
-	set_sock(&server_addr, htonl(INADDR_ANY), (u_short)atoi(argv[1]));
-
-	if (bind(server_fd, (const struct sockaddr*)&server_addr, sizeof(server_addr)) == -1)
-		error_handling("binding socket", strerror(errno));
-
-	if (listen(server_fd, 5) == -1)
-		error_handling("listen socket", strerror(errno));
-
-	client_len = 0;
-	client_fd = accept(server_fd, (struct sockaddr*)&client_addr, (socklen_t *)&client_len);
-	if (client_fd == -1)	// error when accept client's connect request
-		error_handling("client's requst", strerror(errno));
-	
-	print_connection(client_addr);
-
-	buffer = malloc_buffer();
-	read_size = recv_from_fd(buffer, client_fd, server_fd);
-	print_connect(buffer);
-
-	while (1)
+    pthread_mutex_lock(&mutex);
+    for (i = 0; i < client_cnt; i++)
 	{
-		// Initialize buffer as 0(NULL) for read from client
-		memset(buffer, 0, BUFFER_SIZE);
+		if (client[i] != except)
+        	write(client[i], str, strlen(str));
+	}
+    pthread_mutex_unlock(&mutex);
+}
 
-		// recv data from client
-		read_size = read(client_fd, buffer, BUFFER_SIZE);
+void	*recvRoutine(void *arg)
+{
+	int 	client_fd = *((int *)arg);
+	char	*recv_buffer;
+	int		recv_size;
 
+	recv_buffer = malloc_buffer();
+	memset(recv_buffer, 0, BUFFER_SIZE + 1);
+	recv_size = read(client_fd, recv_buffer, BUFFER_SIZE);
+	send_msg(recv_buffer, client_fd);
+	print_connect(recv_buffer, 1);
+
+	while(1)
+	{
+		memset(recv_buffer, 0, BUFFER_SIZE + 1);
+
+		recv_size = read(client_fd, recv_buffer, BUFFER_SIZE);	
 		// detect error when recv data from client
-		if (read_size <= 0) // error occurs at recv data
+		if (recv_size <= 0) // error occurs at recv data
 		{
-			close(server_fd);
-			free(buffer);
+			// pthread_cancel(send_threadID);
+			close(client_fd);
+			free(recv_buffer);
 			error_handling("recv data", strerror(errno));
+			return (NULL);
 		}
 
 		// print recved data
-		putstr("Client : ");
-		putstr(buffer);
-
-		// recv "QUIT" msg
-		if (strncmp(buffer, "QUIT\n", 5) == 0 && read_size == 6)
-		{
-			// close connection & print "Disconnected"
-			close(server_fd);
-			free(buffer);
-			putstr("Disconnected\n");
-			exit(EXIT_SUCCESS);
-		}
+		putstr(recv_buffer, 1);	
+		send_msg(recv_buffer, client_fd);
+		send_msg("is connected", client_fd);
 	}
-	exit(EXIT_SUCCESS);
+	return (NULL);
 }
 
 int main(int argc, char *argv[])
 {
-	int i;
-
-	// Check parameter's count. If parameter's num is not 1, exit program.
+	pthread_t	recv_threadID;
 	if (argc != 2)
 	{
-		putstr("Usage : ./server <port>\n");
-		exit(EXIT_FAILURE);
+		putstr("usage : ./server <port>\n", 1);
+		exit(FAIL);
 	}
-	i = 0;
-	while (i < 5)
+
+	server.socket_fd = create_socket();
+
+	set_sock(&(server.socket_addr), htonl(INADDR_ANY), (u_short)atoi(argv[1]));
+
+	if (bind(server.socket_fd, (const struct sockaddr*)&(server.socket_addr), sizeof(server.socket_addr)) == -1)
 	{
-		server_fd[i] = create_socket();
-		set_sock(&(server_addr[i]), htonl(INADDR_ANY), (u_short)atoi(argv[1]));
-		i++;
+		error_handling("binding socket", strerror(errno));
+		exit(FAIL);
+	}
+
+	// Make socket as usable. set pending connection queue length
+	if (listen(server.socket_fd, 5) == -1)
+	{
+		error_handling("listen socket", strerror(errno));
+		exit(FAIL);
+	}
+	while (1)
+	{
+		client[client_cnt] = accept(server.socket_fd, (struct sockaddr *)&(client_addr), (socklen_t *)&(client_len));
+		if (client[client_cnt] == -1)
+		{
+			error_handling("client's request", strerror(errno));
+			exit(FAIL);
+		}
+		print_connection(client_addr);
+
+		if (pthread_create(&recv_threadID, NULL, recvRoutine, (void *)&(client[client_cnt])) != 0)
+		{
+			error_handling("create thread", strerror(errno));
+			exit(FAIL);
+		}
+		pthread_detach(recv_threadID);
+		client_cnt++;
 	}
 }

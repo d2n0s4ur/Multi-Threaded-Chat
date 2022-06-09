@@ -24,11 +24,11 @@ int	create_socket(void)
 ********************************************************************/
 void	error_handling(char *type, char *errmsg)
 {
-	putstr("[-]Error encount when ");
-	putstr(type);
-	putstr(" : ");
-	putstr(errmsg);
-	putstr("\n");
+	putstr("[-]Error encount when ", 1);
+	putstr(type, 1);
+	putstr(" : ", 1);
+	putstr(errmsg, 1);
+	putstr("\n", 1);
 }
 
 /*******************************************************************
@@ -37,9 +37,9 @@ void	error_handling(char *type, char *errmsg)
 * RETURN :		None(void)
 * DESCRIPTION :	write string at stdin buffer
 ********************************************************************/
-void	putstr(char *s)
+void	putstr(char *s, int fd)
 {
-	write(1, s, strlen(s));
+	write(fd, s, strlen(s));
 }
 
 /*******************************************************************
@@ -50,11 +50,11 @@ void	putstr(char *s)
 ********************************************************************/
 void	print_connection(struct sockaddr_in info)
 {
-	putstr("Connection from ");
-	putstr(inet_ntoa(info.sin_addr));
-	putstr(":");
+	putstr("Connection from ", 1);
+	putstr(inet_ntoa(info.sin_addr), 1);
+	putstr(":", 1);
 	putport(info.sin_port);
-	putstr("\n");
+	putstr("\n", 1);
 }
 
 /*******************************************************************
@@ -138,14 +138,14 @@ int	recv_from_fd(char *buffer, int client_fd, int server_fd)
 	return (ret);
 }
 
-void	print_connect(char *username)
+void	print_connect(char *username, int fd)
 {
-	putstr(username);
-	putstr(" is connected\n");
+	putstr(username, fd);
+	putstr(" is connected\n", fd);
 }
 
-void	print_disconnect(char *username)
+void	print_disconnect(char *username, int fd)
 {
-	putstr(username);
-	putstr(" is disconnected\n");
+	putstr(username, fd);
+	putstr(" is disconnected\n", fd);
 }

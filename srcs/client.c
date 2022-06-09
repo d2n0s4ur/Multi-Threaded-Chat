@@ -1,10 +1,10 @@
 #include "chat.h"
-#include<stdio.h>
 
-int				recv_size, send_size;
+int				recv_size, send_size, send_val;
 t_socket		client;
 char			*send_buffer, *recv_buffer;
 pthread_t		send_threadID, recv_threadID;
+void			*send_ret, *recv_ret;
 
 void	socket_connction(char *argv[])
 {
@@ -22,7 +22,7 @@ void	socket_connction(char *argv[])
 	}
 
 	// print connected msg when connection success
-	print_connect(argv[3]);
+	print_connect(argv[3], 1);
 
 	if (write(client.socket_fd, argv[3], strlen(argv[3])) <= 0) // error occurs when sending username
 	{
@@ -38,7 +38,7 @@ void	*sendRoutine(void *arg)
 	while (1)
 	{
 		// initailize buffer as 0(NULL)
-		memset(send_buffer, 0, BUFFER_SIZE);
+		memset(send_buffer, 0, BUFFER_SIZE + 1);
 
 		// get data from std input
 		send_size = read(0, send_buffer, BUFFER_SIZE);
@@ -49,15 +49,7 @@ void	*sendRoutine(void *arg)
 			close(client.socket_fd);
 			free(send_buffer);
 			error_handling("std input", strerror(errno));
-			exit(FAIL);
-		}
-		if (strncmp(send_buffer, "QUIT\n", 5) == 0 && send_size == 5) // when send "QUIT" -> disconnect
-		{
-			print_disconnect(arg);
-			pthread_cancel(recv_threadID);
-			close(client.socket_fd);
-			free(send_buffer);
-			exit(PASS);
+			return (NULL);
 		}
 		if (write(client.socket_fd, send_buffer, send_size + 1) <= 0) // error occurs when sending data
 		{
@@ -65,7 +57,15 @@ void	*sendRoutine(void *arg)
 			close(client.socket_fd);
 			free(send_buffer);
 			error_handling("sending data", strerror(errno));
-			exit(FAIL);
+			return (NULL);
+		}
+		if (strncmp(send_buffer, "QUIT\n", 5) == 0 && send_size == 5) // when send "QUIT" -> disconnect
+		{
+			print_disconnect(arg, 1);
+			pthread_cancel(recv_threadID);
+			close(client.socket_fd);
+			free(send_buffer);
+			return (NULL);
 		}
 	}
 }
@@ -77,7 +77,7 @@ void	*recvRoutine(void *arg)
 	while (1)
 	{
 		// initialize buffer as 0(NULL)
-		memset(recv_buffer, 0, BUFFER_SIZE);
+		memset(recv_buffer, 0, BUFFER_SIZE + 1);
 
 		// recv data from server
 		recv_size = read(client.socket_fd, recv_buffer, BUFFER_SIZE);
@@ -89,34 +89,45 @@ void	*recvRoutine(void *arg)
 			close(client.socket_fd);
 			free(recv_buffer);
 			error_handling("recv data", strerror(errno));
-			exit(FAIL);
+			return (NULL);
 		}
 
 		// print recved data
-		putstr(recv_buffer);		
+		putstr(recv_buffer, 1);		
 	}
 }
 
 int	main(int argc, char *argv[])
 {
-	send_buffer = malloc_buffer();
-	recv_buffer = malloc_buffer();
-
 	// Check parameter's count. If parameter's num is not 2, exit program.
 	if (argc != 4)
 	{
-		putstr("usage : ./client <ip> <port> <username>\n");
+		putstr("usage : ./client <ip> <port> <username>\n", 1);
 		exit(FAIL);
 	}
-	
+
 	// before recv & send data
 	socket_connction(argv);
 
-	pthread_create(&send_threadID, NULL, sendRoutine, argv[3]);
-	pthread_create(&recv_threadID, NULL, recvRoutine, NULL);
+	send_buffer = malloc_buffer();
+	recv_buffer = malloc_buffer();
 
-	pthread_join(send_threadID, NULL);
-	pthread_join(recv_threadID, NULL);
+	if (pthread_create(&send_threadID, NULL, sendRoutine, argv[3]) != 0)
+	{
+		error_handling("create thread", strerror(errno));
+		exit(FAIL);
+	}
+	if (pthread_create(&recv_threadID, NULL, recvRoutine, NULL) != 0)
+	{
+		error_handling("create thread", strerror(errno));
+		exit(FAIL);
+	}
+
+	pthread_join(send_threadID, &send_ret);
+	pthread_join(recv_threadID, &recv_ret);
+
+	if (send_ret == PTHREAD_CANCELED || recv_ret == PTHREAD_CANCELED)
+		exit(FAIL);
 
 	return (0);
 }

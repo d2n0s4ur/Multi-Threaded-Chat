@@ -3,7 +3,7 @@ CFLAGS=-Wall -Werror -Wextra -I ./include -pthread
 RM=rm -f
 
 UTIL_SRCS=srcs/utils.c
-SERVER_SRCS=srcs/server_backup.c $(UTIL_SRCS)
+SERVER_SRCS=srcs/server.c $(UTIL_SRCS)
 CLIENT_SRCS=srcs/client.c $(UTIL_SRCS)
 
 SERVER_OBJS=$(SERVER_SRCS:.c=.o)
