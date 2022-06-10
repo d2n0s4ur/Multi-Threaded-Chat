@@ -24,11 +24,11 @@ int	create_socket(void)
 ********************************************************************/
 void	error_handling(char *type, char *errmsg)
 {
-	putstr("[-]Error encount when ", 1);
-	putstr(type, 1);
-	putstr(" : ", 1);
-	putstr(errmsg, 1);
-	putstr("\n", 1);
+	putstr("[-]Error encount when ", 2);
+	putstr(type, 2);
+	putstr(" : ", 2);
+	putstr(errmsg, 2);
+	putstr("\n", 2);
 }
 
 /*******************************************************************
@@ -46,7 +46,7 @@ void	putstr(char *s, int fd)
 * FUNCTION : 	void	print_connection(struct sockaddr_in info)
 * PARAMETERS:	info(sockaddr_in)
 * RETURN :		None(void)
-* DESCRIPTION :	write Connection msg
+* DESCRIPTION :	write Connection msg to stdout
 ********************************************************************/
 void	print_connection(struct sockaddr_in info)
 {

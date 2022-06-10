@@ -13,7 +13,7 @@
 # include <string.h>
 # include <pthread.h>
 
-# define BUFFER_SIZE 1024
+# define BUFFER_SIZE 131072
 # define FAIL -1
 # define PASS 0
 # define MAX_CLIENT 5
