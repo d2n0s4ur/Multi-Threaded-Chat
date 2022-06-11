@@ -4,7 +4,7 @@ t_socket 			server;
 int					client_cnt = 0;
 int					client[MAX_CLIENT];
 struct sockaddr_in	client_addr;
-int					client_len;
+int					client_len = sizeof(client_addr);
 pthread_mutex_t		mutex;
 
 /*******************************************************************
@@ -140,9 +140,11 @@ int main(int argc, char *argv[])
 	}
 
 	// mutext init -> for critical section
-	pthread_mutex_init(&mutex,NULL);
+	pthread_mutex_init(&mutex, NULL);
 	while (1)
 	{
+		memset(&client_addr, 0, sizeof(struct sockaddr_in));
+
 		// accept client's connect requset
 		fd = accept(server.socket_fd, (struct sockaddr *)(&client_addr), (socklen_t *)(&client_len));
 		if (client_cnt >= MAX_CLIENT) // when client count over MAX_CLIENT(5)
@@ -155,13 +157,12 @@ int main(int argc, char *argv[])
 			error_handling("client's request", strerror(errno));
 			break;
 		}
+		print_connection(client_addr); // print client's IP & Port
 
 		// Critical section
 		pthread_mutex_lock(&mutex);
 		client[client_cnt++] = fd; // add client fd to client fd arr
 		pthread_mutex_unlock(&mutex);
-
-		print_connection(client_addr); // print client's IP & Port
 		
 		// recv Thread Create
 		if (pthread_create(&recv_threadID, NULL, recvRoutine, (void *)&(fd)) != 0)
